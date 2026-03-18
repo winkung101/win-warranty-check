@@ -1,4 +1,10 @@
-import { DeviceInfo } from "@/types/warranty";
+export interface DeviceInfo {
+  userAgent: string;
+  platform: string;
+  browser: string;
+  os: string;
+  screenSize: string;
+}
 
 export function detectDevice(): DeviceInfo {
   const ua = navigator.userAgent;
