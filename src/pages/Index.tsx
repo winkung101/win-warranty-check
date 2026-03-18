@@ -1,182 +1,69 @@
-import { useState, useMemo, useEffect } from "react";
-import { Smartphone, Monitor, Globe, Cpu, Search, ShieldCheck, ShieldX, CalendarDays, X } from "lucide-react";
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { detectDevice } from "@/lib/device-detect";
-import { findCustomerByImei, getWarrantyStatus, getSavedImei, saveImei, clearSavedImei, type Customer } from "@/lib/warranty-store";
-import winLogo from "@/assets/win-logo.png";
-import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { Smartphone, ShieldCheck, Info } from "lucide-react";
 
 const Index = () => {
-  const device = useMemo(() => detectDevice(), []);
-  const [imei, setImei] = useState("");
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [searched, setSearched] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [device, setDevice] = useState({ model: "กำลังตรวจสอบ...", os: "" });
 
-  // Auto-load saved IMEI on mount
   useEffect(() => {
-    const saved = getSavedImei();
-    if (saved) {
-      setImei(saved);
-      handleSearch(saved);
+    const ua = navigator.userAgent;
+    let model = "ไม่ทราบรุ่น";
+    let os = "Unknown OS";
+
+    if (ua.indexOf("iPhone") > -1) {
+      model = "iPhone";
+      os = "iOS";
+    } else if (ua.indexOf("Android") > -1) {
+      model = "Android Device";
+      os = "Android";
     }
+    
+    setDevice({ model, os });
   }, []);
 
-  const handleSearch = async (searchImei?: string) => {
-    const query = (searchImei || imei).trim();
-    if (!query) return;
-    
-    setLoading(true);
-    try {
-      const found = await findCustomerByImei(query);
-      setCustomer(found);
-      setSearched(true);
-      if (found) {
-        saveImei(query); // Remember for next visit
-      }
-    } catch {
-      toast.error("เกิดข้อผิดพลาดในการค้นหา");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClearImei = () => {
-    clearSavedImei();
-    setImei("");
-    setCustomer(null);
-    setSearched(false);
-  };
-
-  const warranty = customer ? getWarrantyStatus(customer) : null;
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Header */}
-      <div className="gradient-hero px-4 pb-8 pt-10 text-center">
-        <div className="mx-auto max-w-md">
-          <img src={winLogo} alt="WIN TECHNOLOGY" className="mx-auto mb-3 h-20 w-20 rounded-2xl bg-card/10 p-2 backdrop-blur-sm" />
-          <h1 className="text-2xl font-extrabold text-primary-foreground">WIN TECHNOLOGY</h1>
-          <p className="mt-1 text-sm text-primary-foreground/70">ร้านซ่อมมือถือวินคุง Service Center</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50 p-4 pb-20">
+      <header className="text-center my-6">
+        <h1 className="text-2xl font-bold text-slate-900">WIN TECHNOLOGY</h1>
+        <p className="text-slate-500">ร้านซ่อมมือถือวินคุง</p>
+      </header>
 
-      <div className="mx-auto max-w-md space-y-4 px-4 -mt-4">
-        {/* Device Info Card */}
-        <Card className="shadow-card animate-fade-in">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Smartphone className="h-4 w-4 text-primary" />
-              ข้อมูลอุปกรณ์ของคุณ
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex items-center gap-3 rounded-lg bg-muted p-2.5">
-              <Monitor className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">ระบบปฏิบัติการ</p>
-                <p className="font-medium">{device.os}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg bg-muted p-2.5">
-              <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">เบราว์เซอร์</p>
-                <p className="font-medium">{device.browser}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg bg-muted p-2.5">
-              <Cpu className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">หน้าจอ</p>
-                <p className="font-medium">{device.screenSize}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Warranty Search */}
-        <Card className="shadow-card animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Search className="h-4 w-4 text-primary" />
-              เช็คสถานะประกัน
-            </CardTitle>
+      <div className="max-w-md mx-auto space-y-4">
+        <Card className="border-t-4 border-t-blue-500 shadow-lg">
+          <CardHeader className="flex flex-row items-center space-x-2">
+            <Smartphone className="text-blue-500" />
+            <CardTitle className="text-lg">ข้อมูลเครื่องของคุณ</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  placeholder="กรอก IMEI / Serial Number"
-                  value={imei}
-                  onChange={(e) => setImei(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                />
-                {getSavedImei() && (
-                  <button onClick={handleClearImei} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-slate-500">รุ่นอุปกรณ์</p>
+                <p className="font-semibold text-lg">{device.model}</p>
               </div>
-              <Button onClick={() => handleSearch()} size="sm" className="shrink-0" disabled={loading}>
-                {loading ? "..." : "ค้นหา"}
-              </Button>
+              <Badge variant="outline">{device.os}</Badge>
             </div>
-            {getSavedImei() && (
-              <p className="text-xs text-muted-foreground mt-2">📌 จดจำ IMEI ของคุณแล้ว — จะเช็คอัตโนมัติทุกครั้งที่เปิดแอป</p>
-            )}
           </CardContent>
         </Card>
 
-        {/* Warranty Result */}
-        {searched && (
-          <div className="animate-fade-in">
-            {customer && warranty ? (
-              <Card className={`shadow-elevated border-2 ${warranty.status === "active" ? "border-success" : "border-destructive"}`}>
-                <CardContent className="pt-6 text-center">
-                  {warranty.status === "active" ? (
-                    <ShieldCheck className="mx-auto mb-3 h-16 w-16 text-success animate-pulse-glow rounded-full" />
-                  ) : (
-                    <ShieldX className="mx-auto mb-3 h-16 w-16 text-destructive" />
-                  )}
-                  <Badge variant={warranty.status === "active" ? "default" : "destructive"} className={`mb-3 text-sm px-4 py-1 ${warranty.status === "active" ? "bg-success hover:bg-success/90" : ""}`}>
-                    {warranty.status === "active" ? "ประกันปกติ" : "ประกันหมดอายุ"}
-                  </Badge>
-                  <div className="space-y-2 text-sm mt-4">
-                    <p><span className="text-muted-foreground">ชื่อลูกค้า:</span> <strong>{customer.name}</strong></p>
-                    <p><span className="text-muted-foreground">รุ่นเครื่อง:</span> <strong>{customer.device_model}</strong></p>
-                    <p><span className="text-muted-foreground">IMEI:</span> <strong>{customer.imei}</strong></p>
-                    <div className="flex items-center justify-center gap-2 mt-3 rounded-lg bg-muted p-3">
-                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {customer.warranty_start} — {customer.warranty_end}
-                      </span>
-                    </div>
-                    {warranty.status === "active" && (
-                      <p className="text-success font-semibold mt-2">เหลืออีก {warranty.daysLeft} วัน</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-2 border-warning/50">
-                <CardContent className="pt-6 text-center">
-                  <p className="text-muted-foreground">ไม่พบข้อมูลประกัน กรุณาตรวจสอบ IMEI อีกครั้ง</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+        <Card className="border-t-4 border-t-green-500 shadow-lg">
+          <CardHeader className="flex flex-row items-center space-x-2">
+            <ShieldCheck className="text-green-500" />
+            <CardTitle className="text-lg">สถานะประกัน</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center py-6">
+            <div className="bg-green-100 text-green-700 rounded-full py-2 px-4 inline-block font-bold text-xl mb-2">
+              ปกติ (Active)
+            </div>
+            <p className="text-slate-500 text-sm">หมดอายุวันที่: 20 ธันวาคม 2026</p>
+          </CardContent>
+        </Card>
 
-        {/* Admin Link */}
-        <div className="text-center pb-8 pt-4">
-          <Link to="/admin" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-            สำหรับแอดมิน →
-          </Link>
+        <div className="bg-blue-50 p-4 rounded-lg flex items-start space-x-3 border border-blue-100">
+          <Info className="text-blue-500 shrink-0 mt-1" size={18} />
+          <p className="text-xs text-blue-700">
+            หากข้อมูลไม่ถูกต้อง หรือต้องการแจ้งซ่อมเพิ่มเติม ติดต่อสอบถามได้ที่หน้าร้าน "วินคุง" ได้ทันทีครับ
+          </p>
         </div>
       </div>
     </div>

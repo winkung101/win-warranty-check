@@ -9,7 +9,29 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/favicon.ico",
+      "src": "/favicon.ico",{
+  "short_name": "WIN Tech",
+  "name": "WIN TECHNOLOGY ร้านซ่อมมือถือวินคุง",
+  "description": "ระบบเช็คสถานะประกันสินค้า WIN TECHNOLOGY",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "placeholder.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1E293B",
+  "background_color": "#ffffff",
+  "orientation": "portrait"
+}
       "sizes": "64x64",
       "type": "image/x-icon"
     }
