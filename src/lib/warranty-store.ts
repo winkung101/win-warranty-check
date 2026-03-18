@@ -1,47 +1,62 @@
-import { Customer } from "@/types/warranty";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-const STORAGE_KEY = "win_warranty_customers";
+export type Customer = Tables<"customers">;
 
-export function getCustomers(): Customer[] {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) return [];
-  return JSON.parse(data);
+export async function getCustomers(): Promise<Customer[]> {
+  const { data, error } = await supabase
+    .from("customers")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
 }
 
-export function saveCustomers(customers: Customer[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(customers));
+export async function addCustomer(customer: {
+  name: string;
+  phone: string;
+  device_model: string;
+  imei: string;
+  warranty_start: string;
+  warranty_end: string;
+  notes?: string;
+}): Promise<Customer> {
+  const { data, error } = await supabase
+    .from("customers")
+    .insert(customer)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
-export function addCustomer(customer: Omit<Customer, "id">): Customer {
-  const customers = getCustomers();
-  const newCustomer: Customer = {
-    ...customer,
-    id: crypto.randomUUID(),
-  };
-  customers.push(newCustomer);
-  saveCustomers(customers);
-  return newCustomer;
+export async function updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
+  const { data, error } = await supabase
+    .from("customers")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
-export function updateCustomer(id: string, data: Partial<Customer>): Customer | null {
-  const customers = getCustomers();
-  const index = customers.findIndex((c) => c.id === id);
-  if (index === -1) return null;
-  customers[index] = { ...customers[index], ...data };
-  saveCustomers(customers);
-  return customers[index];
+export async function deleteCustomer(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("customers")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
 }
 
-export function deleteCustomer(id: string): boolean {
-  const customers = getCustomers();
-  const filtered = customers.filter((c) => c.id !== id);
-  if (filtered.length === customers.length) return false;
-  saveCustomers(filtered);
-  return true;
-}
-
-export function findCustomerByImei(imei: string): Customer | undefined {
-  return getCustomers().find((c) => c.imei === imei);
+export async function findCustomerByImei(imei: string): Promise<Customer | null> {
+  const { data, error } = await supabase
+    .from("customers")
+    .select("*")
+    .eq("imei", imei)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export function getWarrantyStatus(customer: Customer): {
@@ -49,7 +64,7 @@ export function getWarrantyStatus(customer: Customer): {
   daysLeft: number;
 } {
   const now = new Date();
-  const end = new Date(customer.warrantyEnd);
+  const end = new Date(customer.warranty_end);
   const diffMs = end.getTime() - now.getTime();
   const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   return {
@@ -58,21 +73,32 @@ export function getWarrantyStatus(customer: Customer): {
   };
 }
 
-// Admin auth
-const ADMIN_KEY = "win_admin_auth";
-
-export function adminLogin(username: string, password: string): boolean {
-  if (username === "admin" && password === "win2024") {
-    localStorage.setItem(ADMIN_KEY, "true");
-    return true;
-  }
-  return false;
+// Admin auth using Supabase Auth
+export async function adminLogin(email: string, password: string): Promise<boolean> {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  return !error;
 }
 
-export function isAdminLoggedIn(): boolean {
-  return localStorage.getItem(ADMIN_KEY) === "true";
+export async function isAdminLoggedIn(): Promise<boolean> {
+  const { data } = await supabase.auth.getSession();
+  return !!data.session;
 }
 
-export function adminLogout(): void {
-  localStorage.removeItem(ADMIN_KEY);
+export async function adminLogout(): Promise<void> {
+  await supabase.auth.signOut();
+}
+
+// IMEI memory
+const IMEI_KEY = "win_saved_imei";
+
+export function getSavedImei(): string | null {
+  return localStorage.getItem(IMEI_KEY);
+}
+
+export function saveImei(imei: string): void {
+  localStorage.setItem(IMEI_KEY, imei);
+}
+
+export function clearSavedImei(): void {
+  localStorage.removeItem(IMEI_KEY);
 }

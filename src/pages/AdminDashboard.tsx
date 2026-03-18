@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,11 @@ import {
 } from "lucide-react";
 import {
   getCustomers, addCustomer, updateCustomer, deleteCustomer,
-  getWarrantyStatus, isAdminLoggedIn, adminLogout,
+  getWarrantyStatus, isAdminLoggedIn, adminLogout, type Customer,
 } from "@/lib/warranty-store";
-import { Customer } from "@/types/warranty";
 import { toast } from "sonner";
 
-const emptyForm = { name: "", phone: "", deviceModel: "", imei: "", warrantyStart: "", warrantyEnd: "", notes: "" };
+const emptyForm = { name: "", phone: "", device_model: "", imei: "", warranty_start: "", warranty_end: "", notes: "" };
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -29,58 +28,98 @@ const AdminDashboard = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await getCustomers();
+      setCustomers(data);
+    } catch {
+      toast.error("โหลดข้อมูลไม่สำเร็จ");
+    }
+  }, []);
 
   useEffect(() => {
-    if (!isAdminLoggedIn()) {
-      navigate("/admin");
-      return;
-    }
-    setCustomers(getCustomers());
-  }, [navigate]);
+    const init = async () => {
+      const loggedIn = await isAdminLoggedIn();
+      if (!loggedIn) {
+        navigate("/admin");
+        return;
+      }
+      await refresh();
+      setLoading(false);
+    };
+    init();
+  }, [navigate, refresh]);
 
-  const refresh = () => setCustomers(getCustomers());
-
-  const handleSubmit = () => {
-    if (!form.name || !form.imei || !form.warrantyStart || !form.warrantyEnd) {
+  const handleSubmit = async () => {
+    if (!form.name || !form.imei || !form.warranty_start || !form.warranty_end) {
       toast.error("กรุณากรอกข้อมูลให้ครบ");
       return;
     }
-    if (editId) {
-      updateCustomer(editId, form);
-      toast.success("อัปเดตข้อมูลแล้ว");
-    } else {
-      addCustomer(form);
-      toast.success("เพิ่มลูกค้าแล้ว");
+    try {
+      if (editId) {
+        await updateCustomer(editId, form);
+        toast.success("อัปเดตข้อมูลแล้ว");
+      } else {
+        await addCustomer(form);
+        toast.success("เพิ่มลูกค้าแล้ว");
+      }
+      setForm(emptyForm);
+      setEditId(null);
+      setFormOpen(false);
+      await refresh();
+    } catch {
+      toast.error("เกิดข้อผิดพลาด");
     }
-    setForm(emptyForm);
-    setEditId(null);
-    setFormOpen(false);
-    refresh();
   };
 
   const handleEdit = (c: Customer) => {
     setEditId(c.id);
-    setForm({ name: c.name, phone: c.phone, deviceModel: c.deviceModel, imei: c.imei, warrantyStart: c.warrantyStart, warrantyEnd: c.warrantyEnd, notes: c.notes || "" });
+    setForm({
+      name: c.name,
+      phone: c.phone || "",
+      device_model: c.device_model || "",
+      imei: c.imei,
+      warranty_start: c.warranty_start,
+      warranty_end: c.warranty_end,
+      notes: c.notes || "",
+    });
     setFormOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteCustomer(id);
-    toast.success("ลบข้อมูลแล้ว");
-    refresh();
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCustomer(id);
+      toast.success("ลบข้อมูลแล้ว");
+      await refresh();
+    } catch {
+      toast.error("ลบไม่สำเร็จ");
+    }
   };
 
-  const handleLogout = () => {
-    adminLogout();
+  const handleLogout = async () => {
+    await adminLogout();
     navigate("/admin");
   };
 
   const filtered = customers.filter(
-    (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.imei.includes(search) || c.deviceModel.toLowerCase().includes(search.toLowerCase())
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.imei.includes(search) ||
+      (c.device_model || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const activeCount = customers.filter((c) => getWarrantyStatus(c).status === "active").length;
   const expiredCount = customers.length - activeCount;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">กำลังโหลด...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,11 +181,11 @@ const AdminDashboard = () => {
               <div className="space-y-3">
                 <div><Label>ชื่อลูกค้า *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
                 <div><Label>เบอร์โทร</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-                <div><Label>รุ่นเครื่อง</Label><Input value={form.deviceModel} onChange={(e) => setForm({ ...form, deviceModel: e.target.value })} /></div>
+                <div><Label>รุ่นเครื่อง</Label><Input value={form.device_model} onChange={(e) => setForm({ ...form, device_model: e.target.value })} /></div>
                 <div><Label>IMEI / Serial *</Label><Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} /></div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div><Label>เริ่มประกัน *</Label><Input type="date" value={form.warrantyStart} onChange={(e) => setForm({ ...form, warrantyStart: e.target.value })} /></div>
-                  <div><Label>สิ้นสุดประกัน *</Label><Input type="date" value={form.warrantyEnd} onChange={(e) => setForm({ ...form, warrantyEnd: e.target.value })} /></div>
+                  <div><Label>เริ่มประกัน *</Label><Input type="date" value={form.warranty_start} onChange={(e) => setForm({ ...form, warranty_start: e.target.value })} /></div>
+                  <div><Label>สิ้นสุดประกัน *</Label><Input type="date" value={form.warranty_end} onChange={(e) => setForm({ ...form, warranty_end: e.target.value })} /></div>
                 </div>
                 <div><Label>หมายเหตุ</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
                 <Button onClick={handleSubmit} className="w-full">{editId ? "บันทึกการแก้ไข" : "เพิ่มลูกค้า"}</Button>
@@ -173,7 +212,7 @@ const AdminDashboard = () => {
                             {w.status === "active" ? `เหลือ ${w.daysLeft} วัน` : "หมดอายุ"}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">{c.deviceModel} • {c.imei}</p>
+                        <p className="text-xs text-muted-foreground">{c.device_model} • {c.imei}</p>
                         <p className="text-xs text-muted-foreground">{c.phone}</p>
                       </div>
                       <div className="flex gap-1 shrink-0 ml-2">
