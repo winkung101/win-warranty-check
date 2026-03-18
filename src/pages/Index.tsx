@@ -1,28 +1,58 @@
-import { useState, useMemo } from "react";
-import { Smartphone, Monitor, Globe, Cpu, Search, ShieldCheck, ShieldX, CalendarDays } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Smartphone, Monitor, Globe, Cpu, Search, ShieldCheck, ShieldX, CalendarDays, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { detectDevice } from "@/lib/device-detect";
-import { findCustomerByImei, getWarrantyStatus } from "@/lib/warranty-store";
-import { Customer } from "@/types/warranty";
+import { findCustomerByImei, getWarrantyStatus, getSavedImei, saveImei, clearSavedImei, type Customer } from "@/lib/warranty-store";
 import winLogo from "@/assets/win-logo.png";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 const Index = () => {
   const device = useMemo(() => detectDevice(), []);
   const [imei, setImei] = useState("");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Auto-load saved IMEI on mount
+  useEffect(() => {
+    const saved = getSavedImei();
+    if (saved) {
+      setImei(saved);
+      handleSearch(saved);
+    }
+  }, []);
+
+  const handleSearch = async (searchImei?: string) => {
+    const query = (searchImei || imei).trim();
+    if (!query) return;
+    
+    setLoading(true);
+    try {
+      const found = await findCustomerByImei(query);
+      setCustomer(found);
+      setSearched(true);
+      if (found) {
+        saveImei(query); // Remember for next visit
+      }
+    } catch {
+      toast.error("เกิดข้อผิดพลาดในการค้นหา");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearImei = () => {
+    clearSavedImei();
+    setImei("");
+    setCustomer(null);
+    setSearched(false);
+  };
 
   const warranty = customer ? getWarrantyStatus(customer) : null;
-
-  const handleSearch = () => {
-    const found = findCustomerByImei(imei.trim());
-    setCustomer(found || null);
-    setSearched(true);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,16 +109,26 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Input
-                placeholder="กรอก IMEI / Serial Number"
-                value={imei}
-                onChange={(e) => setImei(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
-              <Button onClick={handleSearch} size="sm" className="shrink-0">
-                ค้นหา
+              <div className="relative flex-1">
+                <Input
+                  placeholder="กรอก IMEI / Serial Number"
+                  value={imei}
+                  onChange={(e) => setImei(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+                {getSavedImei() && (
+                  <button onClick={handleClearImei} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <Button onClick={() => handleSearch()} size="sm" className="shrink-0" disabled={loading}>
+                {loading ? "..." : "ค้นหา"}
               </Button>
             </div>
+            {getSavedImei() && (
+              <p className="text-xs text-muted-foreground mt-2">📌 จดจำ IMEI ของคุณแล้ว — จะเช็คอัตโนมัติทุกครั้งที่เปิดแอป</p>
+            )}
           </CardContent>
         </Card>
 
@@ -108,12 +148,12 @@ const Index = () => {
                   </Badge>
                   <div className="space-y-2 text-sm mt-4">
                     <p><span className="text-muted-foreground">ชื่อลูกค้า:</span> <strong>{customer.name}</strong></p>
-                    <p><span className="text-muted-foreground">รุ่นเครื่อง:</span> <strong>{customer.deviceModel}</strong></p>
+                    <p><span className="text-muted-foreground">รุ่นเครื่อง:</span> <strong>{customer.device_model}</strong></p>
                     <p><span className="text-muted-foreground">IMEI:</span> <strong>{customer.imei}</strong></p>
                     <div className="flex items-center justify-center gap-2 mt-3 rounded-lg bg-muted p-3">
                       <CalendarDays className="h-4 w-4 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
-                        {customer.warrantyStart} — {customer.warrantyEnd}
+                        {customer.warranty_start} — {customer.warranty_end}
                       </span>
                     </div>
                     {warranty.status === "active" && (

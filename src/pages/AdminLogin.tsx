@@ -10,17 +10,26 @@ import winLogo from "@/assets/win-logo.png";
 import { toast } from "sonner";
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminLogin(username, password)) {
-      toast.success("เข้าสู่ระบบสำเร็จ");
-      navigate("/admin/dashboard");
-    } else {
-      toast.error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+    setLoading(true);
+    try {
+      const success = await adminLogin(email, password);
+      if (success) {
+        toast.success("เข้าสู่ระบบสำเร็จ");
+        navigate("/admin/dashboard");
+      } else {
+        toast.error("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      }
+    } catch {
+      toast.error("เกิดข้อผิดพลาด");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,16 +44,16 @@ const AdminLogin = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">ชื่อผู้ใช้</Label>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" />
+              <Label htmlFor="email">อีเมล</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">รหัสผ่าน</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••" />
             </div>
-            <Button type="submit" className="w-full gap-2">
+            <Button type="submit" className="w-full gap-2" disabled={loading}>
               <Lock className="h-4 w-4" />
-              เข้าสู่ระบบ
+              {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
             </Button>
           </form>
         </CardContent>
