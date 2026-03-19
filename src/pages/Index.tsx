@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getSavedImei, saveImei, clearSavedImei } from "@/lib/warranty-store";
 import { detectDevice } from "@/lib/device-detect";
-
+// force rebuild
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [customer, setCustomer] = useState<any>(null);
