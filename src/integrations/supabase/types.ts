@@ -20,6 +20,11 @@ export type Database = {
           device_model: string | null
           id: string
           imei: string
+          last_check_at: string | null
+          last_check_browser: string | null
+          last_check_device: string | null
+          last_check_os: string | null
+          last_check_screen: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -32,6 +37,11 @@ export type Database = {
           device_model?: string | null
           id?: string
           imei: string
+          last_check_at?: string | null
+          last_check_browser?: string | null
+          last_check_device?: string | null
+          last_check_os?: string | null
+          last_check_screen?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -44,6 +54,11 @@ export type Database = {
           device_model?: string | null
           id?: string
           imei?: string
+          last_check_at?: string | null
+          last_check_browser?: string | null
+          last_check_device?: string | null
+          last_check_os?: string | null
+          last_check_screen?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
