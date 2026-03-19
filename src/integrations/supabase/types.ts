@@ -22,6 +22,7 @@ export type Database = {
           imei: string
           last_check_at: string | null
           last_check_browser: string | null
+          last_check_details: Json | null
           last_check_device: string | null
           last_check_os: string | null
           last_check_screen: string | null
@@ -39,6 +40,7 @@ export type Database = {
           imei: string
           last_check_at?: string | null
           last_check_browser?: string | null
+          last_check_details?: Json | null
           last_check_device?: string | null
           last_check_os?: string | null
           last_check_screen?: string | null
@@ -56,6 +58,7 @@ export type Database = {
           imei?: string
           last_check_at?: string | null
           last_check_browser?: string | null
+          last_check_details?: Json | null
           last_check_device?: string | null
           last_check_os?: string | null
           last_check_screen?: string | null
@@ -73,16 +76,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      record_device_check: {
-        Args: {
-          _browser: string
-          _device: string
-          _imei: string
-          _os: string
-          _screen: string
-        }
-        Returns: undefined
-      }
+      record_device_check:
+        | {
+            Args: {
+              _browser: string
+              _device: string
+              _imei: string
+              _os: string
+              _screen: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _browser: string
+              _details?: Json
+              _device: string
+              _imei: string
+              _os: string
+              _screen: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       [_ in never]: never

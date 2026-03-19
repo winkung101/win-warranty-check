@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getSavedImei, saveImei, clearSavedImei } from "@/lib/warranty-store";
-import { detectDevice } from "@/lib/device-detect";
+import { detectDevice, serializeDeviceInfo } from "@/lib/device-detect";
 // force rebuild
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,15 +41,16 @@ const Index = () => {
 
       if (data) {
         saveImei(imei);
-        // บันทึกข้อมูลอุปกรณ์ลูกค้า
+        // บันทึกข้อมูลอุปกรณ์ลูกค้าแบบละเอียด
         const device = detectDevice();
         await supabase.rpc('record_device_check', {
           _imei: imei,
           _device: device.platform,
-          _os: device.os,
-          _browser: device.browser,
+          _os: `${device.os} ${device.osVersion}`.trim(),
+          _browser: `${device.browser} ${device.browserVersion}`.trim(),
           _screen: device.screenSize,
-        });
+          _details: JSON.parse(serializeDeviceInfo(device)),
+        } as any);
         toast.success("ดึงข้อมูลสำเร็จ");
       } else {
         toast.error("ไม่พบข้อมูลประกันของคุณ");
