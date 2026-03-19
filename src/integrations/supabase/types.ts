@@ -73,7 +73,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      record_device_check: {
+        Args: {
+          _browser: string
+          _device: string
+          _imei: string
+          _os: string
+          _screen: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
