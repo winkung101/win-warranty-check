@@ -41,15 +41,16 @@ const Index = () => {
 
       if (data) {
         saveImei(imei);
-        // บันทึกข้อมูลอุปกรณ์ลูกค้า
+        // บันทึกข้อมูลอุปกรณ์ลูกค้าแบบละเอียด
         const device = detectDevice();
         await supabase.rpc('record_device_check', {
           _imei: imei,
           _device: device.platform,
-          _os: device.os,
-          _browser: device.browser,
+          _os: `${device.os} ${device.osVersion}`.trim(),
+          _browser: `${device.browser} ${device.browserVersion}`.trim(),
           _screen: device.screenSize,
-        });
+          _details: JSON.parse(serializeDeviceInfo(device)),
+        } as any);
         toast.success("ดึงข้อมูลสำเร็จ");
       } else {
         toast.error("ไม่พบข้อมูลประกันของคุณ");
