@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getSavedImei, saveImei, clearSavedImei } from "@/lib/warranty-store";
-import { getDeviceInfo } from "@/lib/device-detect";
+import { detectDevice } from "@/lib/device-detect";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
