@@ -21,6 +21,36 @@ import { toast } from "sonner";
 
 const emptyForm = { name: "", phone: "", device_model: "", imei: "", warranty_start: "", warranty_end: "", notes: "" };
 
+const deviceFieldLabel = (key: string): string => {
+  const labels: Record<string, string> = {
+    platform: "แพลตฟอร์ม",
+    browser: "เบราว์เซอร์",
+    browserVersion: "เวอร์ชันเบราว์เซอร์",
+    os: "ระบบปฏิบัติการ",
+    osVersion: "เวอร์ชัน OS",
+    screenSize: "ขนาดหน้าจอ",
+    viewportSize: "ขนาด Viewport",
+    pixelRatio: "Pixel Ratio",
+    colorDepth: "Color Depth",
+    language: "ภาษา",
+    languages: "ภาษาทั้งหมด",
+    timezone: "เขตเวลา",
+    cookiesEnabled: "คุกกี้",
+    online: "ออนไลน์",
+    touchSupport: "รองรับ Touch",
+    maxTouchPoints: "Touch Points",
+    hardwareConcurrency: "CPU Cores",
+    deviceMemory: "หน่วยความจำ (GB)",
+    connectionType: "ประเภทเครือข่าย",
+    connectionSpeed: "ความเร็วเครือข่าย",
+    vendor: "Vendor",
+    doNotTrack: "Do Not Track",
+    pdfSupport: "รองรับ PDF",
+    orientation: "แนวหน้าจอ",
+  };
+  return labels[key] || key;
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
