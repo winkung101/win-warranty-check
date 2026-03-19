@@ -215,16 +215,39 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground">{c.device_model} • {c.imei}</p>
                         <p className="text-xs text-muted-foreground">{c.phone}</p>
                         {c.last_check_at && (
-                          <div className="mt-1 flex flex-wrap items-center gap-1">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {c.last_check_os} · {c.last_check_browser}
-                            </Badge>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              {c.last_check_screen}
-                            </Badge>
-                            <span className="text-[10px] text-muted-foreground">
-                              เช็คล่าสุด {new Date(c.last_check_at).toLocaleDateString('th-TH')}
-                            </span>
+                          <div className="mt-2 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {c.last_check_os} · {c.last_check_browser}
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {c.last_check_screen}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground">
+                                เช็คล่าสุด {new Date(c.last_check_at).toLocaleDateString('th-TH')} {new Date(c.last_check_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            {(c as any).last_check_details && (
+                              <details className="text-[11px]">
+                                <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                                  ดูข้อมูลเครื่องละเอียด
+                                </summary>
+                                <div className="mt-1.5 p-2 bg-muted/50 rounded-md space-y-0.5 text-muted-foreground">
+                                  {Object.entries((c as any).last_check_details as Record<string, string>)
+                                    .filter(([key]) => key !== 'userAgent')
+                                    .map(([key, val]) => (
+                                      <div key={key} className="flex justify-between gap-2">
+                                        <span className="font-medium text-foreground/70 shrink-0">{deviceFieldLabel(key)}</span>
+                                        <span className="text-right truncate">{val}</span>
+                                      </div>
+                                    ))}
+                                  <div className="pt-1 border-t border-border mt-1">
+                                    <span className="font-medium text-foreground/70">User Agent</span>
+                                    <p className="break-all text-[10px] mt-0.5">{(c as any).last_check_details.userAgent}</p>
+                                  </div>
+                                </div>
+                              </details>
+                            )}
                           </div>
                         )}
                       </div>
