@@ -15,7 +15,7 @@ const Index = () => {
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const deviceInfo = getDeviceInfo();
+  const deviceInfo = detectDevice();
 
   // โหลด IMEI ที่เคยบันทึกไว้อัตโนมัติ
   useEffect(() => {
