@@ -1,7 +1,7 @@
 {
-  "name": "WIN Warranty",
+  "name": "WIN TECHNOLOGY ร้านซ่อมมือถือวินคุง",
   "short_name": "WIN Warranty",
-  "description": "WIN TECHNOLOGY - ร้านซ่อมมือถือวินคุง Service Center - ระบบเช็คสถานะประกัน",
+  "description": "ระบบเช็คสถานะประกันสินค้า WIN TECHNOLOGY",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1e293b",
@@ -9,31 +9,16 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/favicon.ico",{
-  "short_name": "WIN Tech",
-  "name": "WIN TECHNOLOGY ร้านซ่อมมือถือวินคุง",
-  "description": "ระบบเช็คสถานะประกันสินค้า WIN TECHNOLOGY",
-  "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "placeholder.svg",
-      "type": "image/svg+xml",
+      "src": "/icon-192.png",
       "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#1E293B",
-  "background_color": "#ffffff",
-  "orientation": "portrait"
-}
-      "sizes": "64x64",
-      "type": "image/x-icon"
     }
   ]
 }
