@@ -214,6 +214,19 @@ const AdminDashboard = () => {
                         </div>
                         <p className="text-xs text-muted-foreground">{c.device_model} • {c.imei}</p>
                         <p className="text-xs text-muted-foreground">{c.phone}</p>
+                        {c.last_check_at && (
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {c.last_check_os} · {c.last_check_browser}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {c.last_check_screen}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground">
+                              เช็คล่าสุด {new Date(c.last_check_at).toLocaleDateString('th-TH')}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-1 shrink-0 ml-2">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(c)}>
