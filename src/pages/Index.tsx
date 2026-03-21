@@ -205,6 +205,9 @@ const Index = () => {
                 </Card>
               );
             })()}
+
+            {/* Push Notification Subscribe */}
+            <PushNotificationButton imei={customer.imei} />
           </>
         ) : hasSearched && (
           <div className="text-center py-10 text-slate-400 space-y-2">
