@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getSavedImei, saveImei, clearSavedImei } from "@/lib/warranty-store";
 import { detectDevice, serializeDeviceInfo } from "@/lib/device-detect";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
+import PushNotificationButton from "@/components/PushNotificationButton";
 // force rebuild
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
