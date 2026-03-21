@@ -225,6 +225,11 @@ const AdminDashboard = () => {
           </Dialog>
         </div>
 
+        {/* Announcement Manager */}
+        <div className="animate-fade-in" style={{ animationDelay: "0.12s" }}>
+          <AnnouncementManager />
+        </div>
+
         {/* Customer List */}
         <div className="space-y-3 pb-8 animate-fade-in" style={{ animationDelay: "0.15s" }}>
           {filtered.length === 0 ? (
