@@ -14,12 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          message: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
           device_model: string | null
           id: string
           imei: string
+          last_check_at: string | null
+          last_check_browser: string | null
+          last_check_details: Json | null
+          last_check_device: string | null
+          last_check_os: string | null
+          last_check_screen: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -32,6 +68,12 @@ export type Database = {
           device_model?: string | null
           id?: string
           imei: string
+          last_check_at?: string | null
+          last_check_browser?: string | null
+          last_check_details?: Json | null
+          last_check_device?: string | null
+          last_check_os?: string | null
+          last_check_screen?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -44,6 +86,12 @@ export type Database = {
           device_model?: string | null
           id?: string
           imei?: string
+          last_check_at?: string | null
+          last_check_browser?: string | null
+          last_check_details?: Json | null
+          last_check_device?: string | null
+          last_check_os?: string | null
+          last_check_screen?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
@@ -53,12 +101,87 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          imei: string
+          p256dh: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          imei: string
+          p256dh: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          imei?: string
+          p256dh?: string
+        }
+        Relationships: []
+      }
+      virus_scans: {
+        Row: {
+          id: string
+          imei: string
+          scan_result: string
+          details: string | null
+          scanned_by: string | null
+          scanned_at: string
+        }
+        Insert: {
+          id?: string
+          imei: string
+          scan_result: string
+          details?: string | null
+          scanned_by?: string | null
+          scanned_at?: string
+        }
+        Update: {
+          id?: string
+          imei?: string
+          scan_result?: string
+          details?: string | null
+          scanned_by?: string | null
+          scanned_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      record_device_check:
+        | {
+            Args: {
+              _browser: string
+              _device: string
+              _imei: string
+              _os: string
+              _screen: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _browser: string
+              _details?: Json
+              _device: string
+              _imei: string
+              _os: string
+              _screen: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       [_ in never]: never
