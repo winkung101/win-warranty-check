@@ -97,7 +97,8 @@ const Index = () => {
       </header>
 
       <div className="max-w-md mx-auto space-y-5">
-        {/* Device Info */}
+        {/* Announcements */}
+        <AnnouncementBanner />
         <Card className="border-none shadow-sm rounded-2xl bg-white/80">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
