@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getSavedImei, saveImei, clearSavedImei } from "@/lib/warranty-store";
 import { detectDevice, serializeDeviceInfo } from "@/lib/device-detect";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
+import PushNotificationButton from "@/components/PushNotificationButton";
 // force rebuild
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -95,7 +97,8 @@ const Index = () => {
       </header>
 
       <div className="max-w-md mx-auto space-y-5">
-        {/* Device Info */}
+        {/* Announcements */}
+        <AnnouncementBanner />
         <Card className="border-none shadow-sm rounded-2xl bg-white/80">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
@@ -202,6 +205,9 @@ const Index = () => {
                 </Card>
               );
             })()}
+
+            {/* Push Notification Subscribe */}
+            <PushNotificationButton imei={customer.imei} />
           </>
         ) : hasSearched && (
           <div className="text-center py-10 text-slate-400 space-y-2">

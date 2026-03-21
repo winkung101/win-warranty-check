@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,11 @@ const AdminDashboard = () => {
               </div>
             </DialogContent>
           </Dialog>
+        </div>
+
+        {/* Announcement Manager */}
+        <div className="animate-fade-in" style={{ animationDelay: "0.12s" }}>
+          <AnnouncementManager />
         </div>
 
         {/* Customer List */}
