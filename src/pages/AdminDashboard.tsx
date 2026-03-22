@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Users, Plus, LogOut, ShieldCheck, ShieldX, Pencil, Trash2, Search, Bell, Shield
+  Users, Plus, LogOut, ShieldCheck, ShieldX, Pencil, Trash2, Search, Bell, Shield, Bug,
+  Clock, Smartphone, CheckCircle2, XCircle
 } from "lucide-react";
 import {
   getCustomers, addCustomer, updateCustomer, deleteCustomer,
@@ -26,30 +28,15 @@ const emptyForm = { name: "", phone: "", device_model: "", imei: "", warranty_st
 
 const deviceFieldLabel = (key: string): string => {
   const labels: Record<string, string> = {
-    platform: "แพลตฟอร์ม",
-    browser: "เบราว์เซอร์",
-    browserVersion: "เวอร์ชันเบราว์เซอร์",
-    os: "ระบบปฏิบัติการ",
-    osVersion: "เวอร์ชัน OS",
-    screenSize: "ขนาดหน้าจอ",
-    viewportSize: "ขนาด Viewport",
-    pixelRatio: "Pixel Ratio",
-    colorDepth: "Color Depth",
-    language: "ภาษา",
-    languages: "ภาษาทั้งหมด",
-    timezone: "เขตเวลา",
-    cookiesEnabled: "คุกกี้",
-    online: "ออนไลน์",
-    touchSupport: "รองรับ Touch",
-    maxTouchPoints: "Touch Points",
-    hardwareConcurrency: "CPU Cores",
-    deviceMemory: "หน่วยความจำ (GB)",
-    connectionType: "ประเภทเครือข่าย",
-    connectionSpeed: "ความเร็วเครือข่าย",
-    vendor: "Vendor",
-    doNotTrack: "Do Not Track",
-    pdfSupport: "รองรับ PDF",
-    orientation: "แนวหน้าจอ",
+    platform: "แพลตฟอร์ม", browser: "เบราว์เซอร์", browserVersion: "เวอร์ชันเบราว์เซอร์",
+    os: "ระบบปฏิบัติการ", osVersion: "เวอร์ชัน OS", screenSize: "ขนาดหน้าจอ",
+    viewportSize: "ขนาด Viewport", pixelRatio: "Pixel Ratio", colorDepth: "Color Depth",
+    language: "ภาษา", languages: "ภาษาทั้งหมด", timezone: "เขตเวลา",
+    cookiesEnabled: "คุกกี้", online: "ออนไลน์", touchSupport: "รองรับ Touch",
+    maxTouchPoints: "Touch Points", hardwareConcurrency: "CPU Cores",
+    deviceMemory: "หน่วยความจำ (GB)", connectionType: "ประเภทเครือข่าย",
+    connectionSpeed: "ความเร็วเครือข่าย", vendor: "Vendor", doNotTrack: "Do Not Track",
+    pdfSupport: "รองรับ PDF", orientation: "แนวหน้าจอ",
   };
   return labels[key] || key;
 };
@@ -63,19 +50,28 @@ const AdminDashboard = () => {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
 
-  // States for Direct Push Notification
+  // Push Notification states
   const [pushDialogOpen, setPushDialogOpen] = useState(false);
   const [pushTarget, setPushTarget] = useState<Customer | null>(null);
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
   const [isSendingPush, setIsSendingPush] = useState(false);
 
-  // States for Virus Scan
+  // Virus Scan states
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
   const [scanTarget, setScanTarget] = useState<Customer | null>(null);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  // Virus scan history states
+  const [scanHistoryOpen, setScanHistoryOpen] = useState(false);
+  const [scanHistoryTarget, setScanHistoryTarget] = useState<Customer | null>(null);
+  const [scanHistory, setScanHistory] = useState<any[]>([]);
+
+  // Device detail dialog
+  const [deviceDetailOpen, setDeviceDetailOpen] = useState(false);
+  const [deviceDetailTarget, setDeviceDetailTarget] = useState<Customer | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -89,10 +85,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const init = async () => {
       const loggedIn = await isAdminLoggedIn();
-      if (!loggedIn) {
-        navigate("/admin");
-        return;
-      }
+      if (!loggedIn) { navigate("/admin"); return; }
       await refresh();
       setLoading(false);
     };
@@ -101,60 +94,30 @@ const AdminDashboard = () => {
 
   const handleSubmit = async () => {
     if (!form.name || !form.imei || !form.warranty_start || !form.warranty_end) {
-      toast.error("กรุณากรอกข้อมูลให้ครบ");
-      return;
+      toast.error("กรุณากรอกข้อมูลให้ครบ"); return;
     }
     try {
-      if (editId) {
-        await updateCustomer(editId, form);
-        toast.success("อัปเดตข้อมูลแล้ว");
-      } else {
-        await addCustomer(form);
-        toast.success("เพิ่มลูกค้าแล้ว");
-      }
-      setForm(emptyForm);
-      setEditId(null);
-      setFormOpen(false);
-      await refresh();
-    } catch {
-      toast.error("เกิดข้อผิดพลาด");
-    }
+      if (editId) { await updateCustomer(editId, form); toast.success("อัปเดตข้อมูลแล้ว"); }
+      else { await addCustomer(form); toast.success("เพิ่มลูกค้าแล้ว"); }
+      setForm(emptyForm); setEditId(null); setFormOpen(false); await refresh();
+    } catch { toast.error("เกิดข้อผิดพลาด"); }
   };
 
   const handleEdit = (c: Customer) => {
     setEditId(c.id);
-    setForm({
-      name: c.name,
-      phone: c.phone || "",
-      device_model: c.device_model || "",
-      imei: c.imei,
-      warranty_start: c.warranty_start,
-      warranty_end: c.warranty_end,
-      notes: c.notes || "",
-    });
+    setForm({ name: c.name, phone: c.phone || "", device_model: c.device_model || "", imei: c.imei, warranty_start: c.warranty_start, warranty_end: c.warranty_end, notes: c.notes || "" });
     setFormOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      await deleteCustomer(id);
-      toast.success("ลบข้อมูลแล้ว");
-      await refresh();
-    } catch {
-      toast.error("ลบไม่สำเร็จ");
-    }
+    try { await deleteCustomer(id); toast.success("ลบข้อมูลแล้ว"); await refresh(); }
+    catch { toast.error("ลบไม่สำเร็จ"); }
   };
 
-  const handleLogout = async () => {
-    await adminLogout();
-    navigate("/admin");
-  };
+  const handleLogout = async () => { await adminLogout(); navigate("/admin"); };
 
   const openPushDialog = (c: Customer) => {
-    setPushTarget(c);
-    setPushTitle("แจ้งเตือนจากศูนย์บริการ");
-    setPushBody("");
-    setPushDialogOpen(true);
+    setPushTarget(c); setPushTitle("แจ้งเตือนจากศูนย์บริการ"); setPushBody(""); setPushDialogOpen(true);
   };
 
   const handleSendDirectPush = async () => {
@@ -169,72 +132,73 @@ const AdminDashboard = () => {
       setPushDialogOpen(false);
     } catch (e) {
       toast.error("ส่งแจ้งเตือนไม่สำเร็จ เครื่องอาจยังไม่ได้เปิดรับการแจ้งเตือน");
-    } finally {
-      setIsSendingPush(false);
-    }
+    } finally { setIsSendingPush(false); }
   };
 
   const startVirusScan = async (c: Customer) => {
-    setScanTarget(c);
-    setScanProgress(0);
-    setScanResult(null);
-    setScanDialogOpen(true);
-    setIsScanning(true);
+    setScanTarget(c); setScanProgress(0); setScanResult(null); setScanDialogOpen(true); setIsScanning(true);
 
-    // จำลองการโหลด
-    for (let i = 0; i <= 100; i += 10) {
+    // Simulate scanning with progress
+    for (let i = 0; i <= 80; i += 5) {
       setScanProgress(i);
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 100));
     }
-
-    const isSafe = Math.random() > 0.15; // โอกาสปลอดภัย 85%
-    const resultStatus = isSafe ? "ปลอดภัย (Safe)" : "พบความเสี่ยง (Threat Found)";
-    const resultDetail = isSafe ? "อุปกรณ์ของคุณปลอดภัย ไม่พบมัลแวร์หรือความผิดปกติ" : "ตรวจพบไฟล์ต้องสงสัย กรุณาติดต่อศูนย์บริการ";
-    
-    setScanResult(resultStatus);
 
     try {
-      // บันทึกผลลง DB
-      await supabase.from("virus_scans").insert({
-        imei: c.imei,
-        scan_result: isSafe ? "Safe" : "Threat Found",
-        details: resultDetail
-      });
-
-      // ส่งแจ้งเตือนให้ลูกค้าอัตโนมัติ
-      await supabase.functions.invoke("send-push", {
+      // Call the real scan edge function
+      const { data, error } = await supabase.functions.invoke("scan-device", {
         body: {
-          action: "send-to-imei",
           imei: c.imei,
-          title: "ผลการตรวจเช็คระบบความปลอดภัย",
-          body: `ผลการสแกน: ${resultStatus} - ${resultDetail}`
+          installed_apps: [] // In native app, Capacitor plugin would provide real app list
         }
       });
-      
+
+      setScanProgress(100);
+
+      if (error) throw error;
+
+      const resultText = data.safe ? "ปลอดภัย (Safe)" : `พบ ${data.threats_found} ภัยคุกคาม`;
+      setScanResult(resultText);
+
+      // Send push notification to customer
+      await supabase.functions.invoke("send-push", {
+        body: {
+          action: "send-to-imei", imei: c.imei,
+          title: "ผลการตรวจเช็คระบบความปลอดภัย",
+          body: `ผลการสแกน: ${resultText} - ${data.details}`
+        }
+      });
+
       toast.success("สแกนเสร็จสิ้น และส่งผลแจ้งเตือนให้ลูกค้าแล้ว");
     } catch (e) {
-      toast.error("บันทึกหรือส่งแจ้งเตือนไม่สำเร็จ");
-    } finally {
-      setIsScanning(false);
-    }
+      setScanProgress(100);
+      setScanResult("เกิดข้อผิดพลาด");
+      toast.error("สแกนไม่สำเร็จ");
+    } finally { setIsScanning(false); }
+  };
+
+  const openScanHistory = async (c: Customer) => {
+    setScanHistoryTarget(c); setScanHistoryOpen(true);
+    const { data } = await supabase
+      .from("virus_scans").select("*").eq("imei", c.imei)
+      .order("scanned_at", { ascending: false }).limit(10);
+    setScanHistory(data || []);
+  };
+
+  const openDeviceDetail = (c: Customer) => {
+    setDeviceDetailTarget(c); setDeviceDetailOpen(true);
   };
 
   const filtered = customers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.imei.includes(search) ||
-      (c.device_model || "").toLowerCase().includes(search.toLowerCase())
+    (c) => c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.imei.includes(search) || (c.device_model || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const activeCount = customers.filter((c) => getWarrantyStatus(c).status === "active").length;
   const expiredCount = customers.length - activeCount;
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">กำลังโหลด...</p>
-      </div>
-    );
+    return (<div className="flex min-h-screen items-center justify-center bg-background"><p className="text-muted-foreground">กำลังโหลด...</p></div>);
   }
 
   return (
@@ -286,14 +250,10 @@ const AdminDashboard = () => {
           </div>
           <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) { setEditId(null); setForm(emptyForm); } }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="shrink-0 gap-1">
-                <Plus className="h-4 w-4" /> เพิ่ม
-              </Button>
+              <Button size="sm" className="shrink-0 gap-1"><Plus className="h-4 w-4" /> เพิ่ม</Button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>{editId ? "แก้ไขข้อมูล" : "เพิ่มลูกค้าใหม่"}</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>{editId ? "แก้ไขข้อมูล" : "เพิ่มลูกค้าใหม่"}</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div><Label>ชื่อลูกค้า *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
                 <div><Label>เบอร์โทร</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
@@ -348,36 +308,24 @@ const AdminDashboard = () => {
                                 เช็คล่าสุด {new Date(c.last_check_at).toLocaleDateString('th-TH')} {new Date(c.last_check_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            {(c as any).last_check_details && (
-                              <details className="text-[11px]">
-                                <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-                                  ดูข้อมูลเครื่องละเอียด
-                                </summary>
-                                <div className="mt-1.5 p-2 bg-muted/50 rounded-md space-y-0.5 text-muted-foreground">
-                                  {Object.entries((c as any).last_check_details as Record<string, string>)
-                                    .filter(([key]) => key !== 'userAgent')
-                                    .map(([key, val]) => (
-                                      <div key={key} className="flex justify-between gap-2">
-                                        <span className="font-medium text-foreground/70 shrink-0">{deviceFieldLabel(key)}</span>
-                                        <span className="text-right truncate">{val}</span>
-                                      </div>
-                                    ))}
-                                  <div className="pt-1 border-t border-border mt-1">
-                                    <span className="font-medium text-foreground/70">User Agent</span>
-                                    <p className="break-all text-[10px] mt-0.5">{(c as any).last_check_details.userAgent}</p>
-                                  </div>
-                                </div>
-                              </details>
-                            )}
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-wrap justify-end gap-1 shrink-0 ml-2 max-w-[90px]">
+                      <div className="flex flex-wrap justify-end gap-1 shrink-0 ml-2 max-w-[110px]">
+                        {/* Device detail button */}
+                        {(c as any).last_check_details && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-600 hover:bg-slate-50" onClick={() => openDeviceDetail(c)}>
+                            <Smartphone className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50" onClick={() => openPushDialog(c)}>
                           <Bell className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-500 hover:text-purple-600 hover:bg-purple-50" onClick={() => startVirusScan(c)}>
                           <Shield className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={() => openScanHistory(c)}>
+                          <Bug className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(c)}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -412,22 +360,11 @@ const AdminDashboard = () => {
       {/* Direct Push Notification Dialog */}
       <Dialog open={pushDialogOpen} onOpenChange={setPushDialogOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>ส่งการแจ้งเตือนส่วนตัว</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>ส่งการแจ้งเตือนส่วนตัว</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
-            <div>
-              <Label>ส่งถึง</Label>
-              <Input disabled value={`${pushTarget?.name} (${pushTarget?.imei})`} className="bg-muted" />
-            </div>
-            <div>
-              <Label>หัวข้อ</Label>
-              <Input value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} />
-            </div>
-            <div>
-              <Label>ข้อความ</Label>
-              <Input value={pushBody} onChange={(e) => setPushBody(e.target.value)} />
-            </div>
+            <div><Label>ส่งถึง</Label><Input disabled value={`${pushTarget?.name} (${pushTarget?.imei})`} className="bg-muted" /></div>
+            <div><Label>หัวข้อ</Label><Input value={pushTitle} onChange={(e) => setPushTitle(e.target.value)} /></div>
+            <div><Label>ข้อความ</Label><Textarea value={pushBody} onChange={(e) => setPushBody(e.target.value)} rows={3} /></div>
             <Button onClick={handleSendDirectPush} className="w-full" disabled={isSendingPush}>
               {isSendingPush ? "กำลังส่ง..." : "ส่งการแจ้งเตือน"}
             </Button>
@@ -438,17 +375,12 @@ const AdminDashboard = () => {
       {/* Virus Scan Dialog */}
       <Dialog open={scanDialogOpen} onOpenChange={(open) => !isScanning && setScanDialogOpen(open)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>ตรวจสอบความปลอดภัย (สแกนไวรัส)</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>ตรวจสอบความปลอดภัย (สแกนไวรัส)</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4 text-center">
             <Shield className={`mx-auto h-12 w-12 ${isScanning ? 'text-primary animate-pulse' : scanResult?.includes('ปลอดภัย') ? 'text-success' : 'text-destructive'}`} />
-            
             <p className="text-sm font-medium">กำลังสแกนอุปกรณ์ของ {scanTarget?.name}</p>
             <p className="text-xs text-muted-foreground">{scanTarget?.device_model} ({scanTarget?.imei})</p>
-            
             <Progress value={scanProgress} className="h-2 w-full mt-4" />
-            
             {scanResult && (
               <div className={`mt-4 p-3 rounded-lg border ${scanResult.includes('ปลอดภัย') ? 'bg-success/10 border-success/20 text-success' : 'bg-destructive/10 border-destructive/20 text-destructive'}`}>
                 <p className="font-bold">{scanResult}</p>
@@ -464,6 +396,75 @@ const AdminDashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Scan History Dialog */}
+      <Dialog open={scanHistoryOpen} onOpenChange={setScanHistoryOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bug className="h-5 w-5 text-purple-500" /> ประวัติสแกนไวรัส - {scanHistoryTarget?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            {scanHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">ยังไม่มีประวัติการสแกน</p>
+            ) : (
+              scanHistory.map((scan) => (
+                <div key={scan.id} className={`flex items-start gap-3 p-3 rounded-lg border ${scan.scan_result === 'Safe' ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'}`}>
+                  {scan.scan_result === 'Safe' ? (
+                    <CheckCircle2 className="text-success shrink-0 mt-0.5" size={18} />
+                  ) : (
+                    <XCircle className="text-destructive shrink-0 mt-0.5" size={18} />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold ${scan.scan_result === 'Safe' ? 'text-success' : 'text-destructive'}`}>
+                        {scan.scan_result === 'Safe' ? 'ปลอดภัย' : 'พบภัยคุกคาม'}
+                      </span>
+                      <Badge variant="outline" className="text-[10px]">{scan.scanned_by || 'system'}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{scan.details}</p>
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+                      <Clock size={10} />
+                      {new Date(scan.scanned_at).toLocaleDateString('th-TH')} {new Date(scan.scanned_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Device Detail Dialog */}
+      <Dialog open={deviceDetailOpen} onOpenChange={setDeviceDetailOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5" /> ข้อมูลเครื่อง - {deviceDetailTarget?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1 pt-2">
+            {deviceDetailTarget && (deviceDetailTarget as any).last_check_details ? (
+              <>
+                {Object.entries((deviceDetailTarget as any).last_check_details as Record<string, string>)
+                  .filter(([key]) => key !== 'userAgent')
+                  .map(([key, val]) => (
+                    <div key={key} className="flex justify-between gap-2 py-1.5 border-b border-border text-sm">
+                      <span className="font-medium text-muted-foreground shrink-0">{deviceFieldLabel(key)}</span>
+                      <span className="text-right truncate text-foreground">{val}</span>
+                    </div>
+                  ))}
+                <div className="pt-2 border-t border-border mt-2">
+                  <span className="font-medium text-muted-foreground text-sm">User Agent</span>
+                  <p className="break-all text-xs mt-1 text-muted-foreground">{(deviceDetailTarget as any).last_check_details.userAgent}</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">ยังไม่มีข้อมูลเครื่อง</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
