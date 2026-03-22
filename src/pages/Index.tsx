@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Smartphone, ShieldCheck, Search, AlertCircle, CheckCircle2, XCircle, X } from "lucide-react";
+import { Smartphone, ShieldCheck, Search, CheckCircle2, XCircle, X, Shield, Bug, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -11,15 +11,15 @@ import { getSavedImei, saveImei, clearSavedImei } from "@/lib/warranty-store";
 import { detectDevice, serializeDeviceInfo } from "@/lib/device-detect";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import PushNotificationButton from "@/components/PushNotificationButton";
-// force rebuild
+
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [virusScans, setVirusScans] = useState<any[]>([]);
   const deviceInfo = detectDevice();
 
-  // โหลด IMEI ที่เคยบันทึกไว้อัตโนมัติ
   useEffect(() => {
     const saved = getSavedImei();
     if (saved) {
@@ -27,6 +27,16 @@ const Index = () => {
       searchByImei(saved);
     }
   }, []);
+
+  const fetchVirusScans = async (imei: string) => {
+    const { data } = await supabase
+      .from("virus_scans")
+      .select("*")
+      .eq("imei", imei)
+      .order("scanned_at", { ascending: false })
+      .limit(5);
+    setVirusScans(data || []);
+  };
 
   const searchByImei = async (imei: string) => {
     setLoading(true);
@@ -43,7 +53,6 @@ const Index = () => {
 
       if (data) {
         saveImei(imei);
-        // บันทึกข้อมูลอุปกรณ์ลูกค้าแบบละเอียด
         const device = detectDevice();
         await supabase.rpc('record_device_check', {
           _imei: imei,
@@ -53,6 +62,7 @@ const Index = () => {
           _screen: device.screenSize,
           _details: JSON.parse(serializeDeviceInfo(device)),
         } as any);
+        await fetchVirusScans(imei);
         toast.success("ดึงข้อมูลสำเร็จ");
       } else {
         toast.error("ไม่พบข้อมูลประกันของคุณ");
@@ -76,6 +86,7 @@ const Index = () => {
     setSearchQuery("");
     setCustomer(null);
     setHasSearched(false);
+    setVirusScans([]);
   };
 
   const getWarrantyStatus = (warrantyEnd: string) => {
@@ -97,7 +108,6 @@ const Index = () => {
       </header>
 
       <div className="max-w-md mx-auto space-y-5">
-        {/* Announcements */}
         <AnnouncementBanner />
         <Card className="border-none shadow-sm rounded-2xl bg-white/80">
           <CardContent className="pt-4 pb-3">
@@ -109,7 +119,6 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        {/* ค้นหาด้วย IMEI */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -206,7 +215,73 @@ const Index = () => {
               );
             })()}
 
-            {/* Push Notification Subscribe */}
+            {/* ประวัติสแกนไวรัส */}
+            {virusScans.length > 0 && (
+              <Card className="border-none shadow-md rounded-2xl overflow-hidden">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Shield size={18} className="text-purple-500" /> ประวัติสแกนไวรัส
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {virusScans.map((scan) => (
+                    <div
+                      key={scan.id}
+                      className={`flex items-start gap-3 p-3 rounded-lg border ${
+                        scan.scan_result === 'Safe'
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-red-50 border-red-200'
+                      }`}
+                    >
+                      {scan.scan_result === 'Safe' ? (
+                        <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={18} />
+                      ) : (
+                        <Bug className="text-red-500 shrink-0 mt-0.5" size={18} />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-semibold ${
+                            scan.scan_result === 'Safe' ? 'text-green-700' : 'text-red-700'
+                          }`}>
+                            {scan.scan_result === 'Safe' ? 'ปลอดภัย' : 'พบภัยคุกคาม'}
+                          </span>
+                          <Badge variant="outline" className="text-[10px]">
+                            {scan.scanned_by || 'system'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">{scan.details}</p>
+                        <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
+                          <Clock size={10} />
+                          {new Date(scan.scanned_at).toLocaleDateString('th-TH')} {new Date(scan.scanned_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Device Details */}
+            <Card className="border-none shadow-sm rounded-2xl">
+              <CardContent className="pt-4 pb-3">
+                <details className="text-sm">
+                  <summary className="cursor-pointer text-slate-500 hover:text-slate-700 font-medium flex items-center gap-2">
+                    <Smartphone size={14} /> ข้อมูลเครื่องละเอียด
+                  </summary>
+                  <div className="mt-3 space-y-1.5 text-xs">
+                    {Object.entries(deviceInfo)
+                      .filter(([key]) => key !== 'userAgent')
+                      .map(([key, val]) => (
+                        <div key={key} className="flex justify-between gap-2 py-0.5 border-b border-slate-50">
+                          <span className="text-slate-400 capitalize">{key}</span>
+                          <span className="text-slate-600 text-right truncate max-w-[180px]">{String(val)}</span>
+                        </div>
+                      ))}
+                  </div>
+                </details>
+              </CardContent>
+            </Card>
+
             <PushNotificationButton imei={customer.imei} />
           </>
         ) : hasSearched && (

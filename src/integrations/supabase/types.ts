@@ -101,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      malware_signatures: {
+        Row: {
+          app_name: string
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          package_name: string
+          threat_level: string
+        }
+        Insert: {
+          app_name: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          package_name: string
+          threat_level?: string
+        }
+        Update: {
+          app_name?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          package_name?: string
+          threat_level?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
