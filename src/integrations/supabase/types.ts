@@ -130,28 +130,28 @@ export type Database = {
       }
       virus_scans: {
         Row: {
+          details: string | null
           id: string
           imei: string
           scan_result: string
-          details: string | null
-          scanned_by: string | null
           scanned_at: string
+          scanned_by: string | null
         }
         Insert: {
+          details?: string | null
           id?: string
           imei: string
           scan_result: string
-          details?: string | null
-          scanned_by?: string | null
           scanned_at?: string
+          scanned_by?: string | null
         }
         Update: {
+          details?: string | null
           id?: string
           imei?: string
           scan_result?: string
-          details?: string | null
-          scanned_by?: string | null
           scanned_at?: string
+          scanned_by?: string | null
         }
         Relationships: []
       }
