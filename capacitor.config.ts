@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.9ed0e90b29ad4c6a92251a90e7fd79ca',
+  appId: 'com.win.warrantycheck',
   appName: 'wintech101',
   webDir: 'dist',
   server: {
