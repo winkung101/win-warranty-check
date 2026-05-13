@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Users, Plus, LogOut, ShieldCheck, ShieldX, Pencil, Trash2, Search, Bell, Shield, Bug,
-  Clock, Smartphone, CheckCircle2, XCircle
+  Clock, Smartphone, CheckCircle2, XCircle, Camera
 } from "lucide-react";
 import {
   getCustomers, addCustomer, updateCustomer, deleteCustomer,
@@ -23,6 +23,8 @@ import {
 } from "@/lib/warranty-store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ImeiScanner from "@/components/ImeiScanner";
+import { collectDeviceScan } from "@/lib/real-scanner";
 
 const emptyForm = { name: "", phone: "", device_model: "", imei: "", warranty_start: "", warranty_end: "", notes: "" };
 
@@ -72,6 +74,9 @@ const AdminDashboard = () => {
   // Device detail dialog
   const [deviceDetailOpen, setDeviceDetailOpen] = useState(false);
   const [deviceDetailTarget, setDeviceDetailTarget] = useState<Customer | null>(null);
+
+  // IMEI scanner
+  const [imeiScannerOpen, setImeiScannerOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -138,18 +143,18 @@ const AdminDashboard = () => {
   const startVirusScan = async (c: Customer) => {
     setScanTarget(c); setScanProgress(0); setScanResult(null); setScanDialogOpen(true); setIsScanning(true);
 
-    // Simulate scanning with progress
-    for (let i = 0; i <= 80; i += 5) {
-      setScanProgress(i);
-      await new Promise(r => setTimeout(r, 100));
-    }
-
     try {
-      // Call the real scan edge function
+      // Real collection: native app list (if Capacitor plugin available) + browser artifacts
+      setScanProgress(15);
+      const collection = await collectDeviceScan();
+      setScanProgress(55);
+
       const { data, error } = await supabase.functions.invoke("scan-device", {
         body: {
           imei: c.imei,
-          installed_apps: [] // In native app, Capacitor plugin would provide real app list
+          installed_apps: collection.apps,
+          artifacts: collection.artifacts,
+          native: collection.native,
         }
       });
 
