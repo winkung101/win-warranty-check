@@ -24,6 +24,18 @@ const ImeiScanner = ({ open, onOpenChange, onScanned }: Props) => {
 
     const start = async () => {
       try {
+        // 1) Explicitly request camera permission first so the browser shows the prompt
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("เบราว์เซอร์ไม่รองรับการเข้าถึงกล้อง (ต้องใช้ HTTPS)");
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        // Release the probe stream — html5-qrcode will open its own
+        stream.getTracks().forEach((t) => t.stop());
+
+        // 2) Start the scanner
         const scanner = new Html5Qrcode(REGION_ID, {
           formatsToSupport: [
             Html5QrcodeSupportedFormats.CODE_128,
@@ -51,7 +63,18 @@ const ImeiScanner = ({ open, onOpenChange, onScanned }: Props) => {
         );
         if (!cancelled) setStarting(false);
       } catch (e: any) {
-        toast.error("ไม่สามารถเปิดกล้องได้: " + (e?.message || "permission denied"));
+        const name = e?.name || "";
+        let msg = e?.message || "ไม่ทราบสาเหตุ";
+        if (name === "NotAllowedError" || /denied|permission/i.test(msg)) {
+          msg = "คุณปฏิเสธสิทธิ์กล้อง — กดไอคอนกล้อง/แม่กุญแจที่แถบ URL แล้วเปิดสิทธิ์กล้องสำหรับเว็บนี้ จากนั้นกดสแกนใหม่";
+        } else if (name === "NotFoundError") {
+          msg = "ไม่พบกล้องบนอุปกรณ์นี้";
+        } else if (name === "NotReadableError") {
+          msg = "กล้องถูกใช้งานโดยแอปอื่น กรุณาปิดแอปกล้องอื่นก่อน";
+        } else if (location.protocol !== "https:" && location.hostname !== "localhost") {
+          msg = "ต้องเปิดผ่าน HTTPS เท่านั้น (ใช้ลิงก์ Published / Preview ของ Lovable)";
+        }
+        toast.error(msg);
         onOpenChange(false);
       }
     };
