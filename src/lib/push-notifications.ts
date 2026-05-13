@@ -25,13 +25,26 @@ export async function subscribeToPush(imei: string): Promise<boolean> {
     }
 
     const registration = await navigator.serviceWorker.ready;
-    
-    // Check existing subscription
+    const vapidKey = await getVapidPublicKey();
+    const keyArray = urlBase64ToUint8Array(vapidKey);
+
+    // Check existing subscription — if VAPID key changed, unsubscribe and re-create
     let subscription = await registration.pushManager.getSubscription();
-    
+    if (subscription) {
+      const existingKey = subscription.options.applicationServerKey;
+      const existingArr = existingKey ? new Uint8Array(existingKey) : null;
+      const matches =
+        existingArr &&
+        existingArr.length === keyArray.length &&
+        existingArr.every((b, i) => b === keyArray[i]);
+      if (!matches) {
+        console.log("VAPID key changed — re-subscribing");
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+    }
+
     if (!subscription) {
-      const vapidKey = await getVapidPublicKey();
-      const keyArray = urlBase64ToUint8Array(vapidKey);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: keyArray.buffer as ArrayBuffer,
