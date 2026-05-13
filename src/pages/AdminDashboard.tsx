@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Users, Plus, LogOut, ShieldCheck, ShieldX, Pencil, Trash2, Search, Bell, Shield, Bug,
-  Clock, Smartphone, CheckCircle2, XCircle
+  Clock, Smartphone, CheckCircle2, XCircle, Camera
 } from "lucide-react";
 import {
   getCustomers, addCustomer, updateCustomer, deleteCustomer,
@@ -23,6 +23,8 @@ import {
 } from "@/lib/warranty-store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ImeiScanner from "@/components/ImeiScanner";
+import { collectDeviceScan } from "@/lib/real-scanner";
 
 const emptyForm = { name: "", phone: "", device_model: "", imei: "", warranty_start: "", warranty_end: "", notes: "" };
 
@@ -72,6 +74,9 @@ const AdminDashboard = () => {
   // Device detail dialog
   const [deviceDetailOpen, setDeviceDetailOpen] = useState(false);
   const [deviceDetailTarget, setDeviceDetailTarget] = useState<Customer | null>(null);
+
+  // IMEI scanner
+  const [imeiScannerOpen, setImeiScannerOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -138,18 +143,18 @@ const AdminDashboard = () => {
   const startVirusScan = async (c: Customer) => {
     setScanTarget(c); setScanProgress(0); setScanResult(null); setScanDialogOpen(true); setIsScanning(true);
 
-    // Simulate scanning with progress
-    for (let i = 0; i <= 80; i += 5) {
-      setScanProgress(i);
-      await new Promise(r => setTimeout(r, 100));
-    }
-
     try {
-      // Call the real scan edge function
+      // Real collection: native app list (if Capacitor plugin available) + browser artifacts
+      setScanProgress(15);
+      const collection = await collectDeviceScan();
+      setScanProgress(55);
+
       const { data, error } = await supabase.functions.invoke("scan-device", {
         body: {
           imei: c.imei,
-          installed_apps: [] // In native app, Capacitor plugin would provide real app list
+          installed_apps: collection.apps,
+          artifacts: collection.artifacts,
+          native: collection.native,
         }
       });
 
@@ -258,7 +263,15 @@ const AdminDashboard = () => {
                 <div><Label>ชื่อลูกค้า *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
                 <div><Label>เบอร์โทร</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
                 <div><Label>รุ่นเครื่อง</Label><Input value={form.device_model} onChange={(e) => setForm({ ...form, device_model: e.target.value })} /></div>
-                <div><Label>IMEI / Serial *</Label><Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} /></div>
+                <div>
+                  <Label>IMEI / Serial *</Label>
+                  <div className="flex gap-2">
+                    <Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} className="flex-1" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => setImeiScannerOpen(true)} title="สแกน IMEI ด้วยกล้อง">
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label>เริ่มประกัน *</Label><Input type="date" value={form.warranty_start} onChange={(e) => setForm({ ...form, warranty_start: e.target.value })} /></div>
                   <div><Label>สิ้นสุดประกัน *</Label><Input type="date" value={form.warranty_end} onChange={(e) => setForm({ ...form, warranty_end: e.target.value })} /></div>
@@ -465,6 +478,11 @@ const AdminDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <ImeiScanner
+        open={imeiScannerOpen}
+        onOpenChange={setImeiScannerOpen}
+        onScanned={(code) => setForm((f) => ({ ...f, imei: code }))}
+      />
     </div>
   );
 };

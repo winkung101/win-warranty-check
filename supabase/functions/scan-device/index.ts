@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { imei, installed_apps } = await req.json();
+    const { imei, installed_apps, artifacts, native } = await req.json();
 
     if (!imei || !Array.isArray(installed_apps)) {
       return new Response(JSON.stringify({ error: "imei and installed_apps[] required" }), {
@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get all malware signatures
     const { data: signatures } = await supabase
       .from("malware_signatures")
       .select("*");
@@ -34,7 +33,6 @@ Deno.serve(async (req) => {
       (signatures || []).map((s: any) => [s.package_name.toLowerCase(), s])
     );
 
-    // Check installed apps against malware database
     const threats: any[] = [];
     const scannedCount = installed_apps.length;
 
@@ -48,22 +46,26 @@ Deno.serve(async (req) => {
           threat_level: match.threat_level,
           category: match.category,
           description: match.description,
+          source: app.source || "unknown",
         });
       }
     }
 
     const isSafe = threats.length === 0;
     const scanResult = isSafe ? "Safe" : "Threat Found";
+    const mode = native ? "Native (รายการแอปจริง)" : "Web (artifacts ของเบราว์เซอร์)";
+    const artifactSummary = artifacts
+      ? ` | SW:${artifacts.serviceWorkers} IDB:${(artifacts.indexedDbs || []).length} Cache:${(artifacts.cacheNames || []).length} Plugins:${(artifacts.plugins || []).length}`
+      : "";
     const details = isSafe
-      ? `สแกน ${scannedCount} แอป ไม่พบภัยคุกคาม`
-      : `พบ ${threats.length} ภัยคุกคามจาก ${scannedCount} แอป: ${threats.map(t => t.app_name).join(", ")}`;
+      ? `[${mode}] สแกน ${scannedCount} รายการ ไม่พบภัยคุกคาม${artifactSummary}`
+      : `[${mode}] พบ ${threats.length}/${scannedCount} ภัยคุกคาม: ${threats.map(t => t.app_name).join(", ")}${artifactSummary}`;
 
-    // Save scan result
     await supabase.from("virus_scans").insert({
       imei,
       scan_result: scanResult,
       details,
-      scanned_by: "system",
+      scanned_by: native ? "native" : "web",
     });
 
     return new Response(
@@ -74,6 +76,7 @@ Deno.serve(async (req) => {
         threats_found: threats.length,
         threats,
         details,
+        mode,
         signatures_count: signatures?.length || 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
