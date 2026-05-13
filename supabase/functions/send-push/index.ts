@@ -190,7 +190,7 @@ async function sendPush(
   payload: string,
   vapidPublicKey: string,
   vapidPrivateKey: string
-): Promise<boolean> {
+): Promise<{ ok: boolean; status: number }> {
   try {
     const jwt = await generateJwt(subscription.endpoint, vapidPrivateKey, vapidPublicKey);
     const { encrypted, salt, localPublicKey } = await encryptPayload(
@@ -208,19 +208,36 @@ async function sendPush(
         "Crypto-Key": `dh=${uint8ArrayToBase64Url(localPublicKey)};p256ecdsa=${vapidPublicKey}`,
         Authorization: `WebPush ${jwt}`,
         TTL: "86400",
+        Urgency: "high",
       },
       body: encrypted,
     });
 
     if (!response.ok) {
-      console.error(`Push failed: ${response.status} ${await response.text()}`);
-      return false;
+      const text = await response.text();
+      console.error(`Push failed: ${response.status} ${text}`);
+      return { ok: false, status: response.status };
     }
-    return true;
+    return { ok: true, status: response.status };
   } catch (e) {
     console.error("Push send error:", e);
-    return false;
+    return { ok: false, status: 0 };
   }
+}
+
+async function sendAndCleanup(
+  supabase: ReturnType<typeof createClient>,
+  sub: { endpoint: string; p256dh: string; auth: string },
+  payload: string,
+  vapidPublicKey: string,
+  vapidPrivateKey: string
+): Promise<boolean> {
+  const result = await sendPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+  if (!result.ok && (result.status === 404 || result.status === 410)) {
+    await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+    console.log("Removed stale subscription:", sub.endpoint);
+  }
+  return result.ok;
 }
 
 Deno.serve(async (req) => {
@@ -238,58 +255,43 @@ Deno.serve(async (req) => {
     const { action, title, body, imei } = await req.json();
 
     if (action === "send-announcement") {
-      // Send push to ALL subscribers
-      const { data: subs } = await supabase
-        .from("push_subscriptions")
-        .select("*");
-
+      const { data: subs } = await supabase.from("push_subscriptions").select("*");
       let sent = 0;
       const payload = JSON.stringify({ title, body, type: "announcement" });
-
       for (const sub of subs || []) {
-        const ok = await sendPush(sub, payload, vapidPublicKey, vapidPrivateKey);
-        if (ok) sent++;
+        if (await sendAndCleanup(supabase, sub, payload, vapidPublicKey, vapidPrivateKey)) sent++;
       }
-
       return new Response(JSON.stringify({ sent, total: subs?.length || 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "warranty-expiring") {
-      // Find customers with warranty expiring in <=30 days
       const { data: customers } = await supabase
         .from("customers")
         .select("imei, name, warranty_end");
-
       const now = new Date();
       let sent = 0;
       let total = 0;
-
       for (const c of customers || []) {
         const end = new Date(c.warranty_end);
         const daysLeft = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         if (daysLeft > 0 && daysLeft <= 30) {
-          // Get subscriptions for this IMEI
           const { data: subs } = await supabase
             .from("push_subscriptions")
             .select("*")
             .eq("imei", c.imei);
-
           const payload = JSON.stringify({
             title: "⚠️ ประกันใกล้หมดอายุ",
             body: `สวัสดีคุณ ${c.name} ประกันของคุณจะหมดอายุในอีก ${daysLeft} วัน`,
             type: "warranty-expiring",
           });
-
           for (const sub of subs || []) {
             total++;
-            const ok = await sendPush(sub, payload, vapidPublicKey, vapidPrivateKey);
-            if (ok) sent++;
+            if (await sendAndCleanup(supabase, sub, payload, vapidPublicKey, vapidPrivateKey)) sent++;
           }
         }
       }
-
       return new Response(JSON.stringify({ sent, total }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -300,15 +302,11 @@ Deno.serve(async (req) => {
         .from("push_subscriptions")
         .select("*")
         .eq("imei", imei);
-
       const payload = JSON.stringify({ title, body, type: "direct" });
       let sent = 0;
-
       for (const sub of subs || []) {
-        const ok = await sendPush(sub, payload, vapidPublicKey, vapidPrivateKey);
-        if (ok) sent++;
+        if (await sendAndCleanup(supabase, sub, payload, vapidPublicKey, vapidPrivateKey)) sent++;
       }
-
       return new Response(JSON.stringify({ sent, total: subs?.length || 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -326,3 +324,4 @@ Deno.serve(async (req) => {
     });
   }
 });
+
