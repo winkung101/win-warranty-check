@@ -190,7 +190,7 @@ async function sendPush(
   payload: string,
   vapidPublicKey: string,
   vapidPrivateKey: string
-): Promise<boolean> {
+): Promise<{ ok: boolean; status: number }> {
   try {
     const jwt = await generateJwt(subscription.endpoint, vapidPrivateKey, vapidPublicKey);
     const { encrypted, salt, localPublicKey } = await encryptPayload(
@@ -208,15 +208,17 @@ async function sendPush(
         "Crypto-Key": `dh=${uint8ArrayToBase64Url(localPublicKey)};p256ecdsa=${vapidPublicKey}`,
         Authorization: `WebPush ${jwt}`,
         TTL: "86400",
+        Urgency: "high",
       },
       body: encrypted,
     });
 
     if (!response.ok) {
-      console.error(`Push failed: ${response.status} ${await response.text()}`);
-      return false;
+      const text = await response.text();
+      console.error(`Push failed: ${response.status} ${text}`);
+      return { ok: false, status: response.status };
     }
-    return true;
+    return { ok: true, status: response.status };
   } catch (e) {
     console.error("Push send error:", e);
     return false;
