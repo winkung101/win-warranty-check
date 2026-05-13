@@ -263,7 +263,15 @@ const AdminDashboard = () => {
                 <div><Label>ชื่อลูกค้า *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
                 <div><Label>เบอร์โทร</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
                 <div><Label>รุ่นเครื่อง</Label><Input value={form.device_model} onChange={(e) => setForm({ ...form, device_model: e.target.value })} /></div>
-                <div><Label>IMEI / Serial *</Label><Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} /></div>
+                <div>
+                  <Label>IMEI / Serial *</Label>
+                  <div className="flex gap-2">
+                    <Input value={form.imei} onChange={(e) => setForm({ ...form, imei: e.target.value })} className="flex-1" />
+                    <Button type="button" variant="outline" size="icon" onClick={() => setImeiScannerOpen(true)} title="สแกน IMEI ด้วยกล้อง">
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label>เริ่มประกัน *</Label><Input type="date" value={form.warranty_start} onChange={(e) => setForm({ ...form, warranty_start: e.target.value })} /></div>
                   <div><Label>สิ้นสุดประกัน *</Label><Input type="date" value={form.warranty_end} onChange={(e) => setForm({ ...form, warranty_end: e.target.value })} /></div>
@@ -470,6 +478,11 @@ const AdminDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <ImeiScanner
+        open={imeiScannerOpen}
+        onOpenChange={setImeiScannerOpen}
+        onScanned={(code) => setForm((f) => ({ ...f, imei: code }))}
+      />
     </div>
   );
 };
